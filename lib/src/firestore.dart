@@ -20,24 +20,24 @@ js.GeoPoint createGeoPoint(num latitude, num longitude) =>
 
 js.GeoPoint _createJsGeoPoint(num latitude, num longitude) {
   final proto = new js.GeoPointProto(latitude: latitude, longitude: longitude);
-  return js.admin.firestore.GeoPoint.fromProto(proto);
+  return js.admin!.firestore.GeoPoint.fromProto(proto);
 }
 
 js.Timestamp _createJsTimestamp(Timestamp ts) {
   return callConstructor(
-      js.admin.firestore.Timestamp, jsify([ts.seconds, ts.nanoseconds]));
+      js.admin!.firestore.Timestamp, jsify([ts.seconds, ts.nanoseconds]));
 }
 
 @Deprecated('This function will be hidden from public API in future versions.')
 js.FieldPath createFieldPath(List<String> fieldNames) {
-  return callConstructor(js.admin.firestore.FieldPath, jsify(fieldNames));
+  return callConstructor(js.admin!.firestore.FieldPath, jsify(fieldNames));
 }
 
 /// Returns a special sentinel [FieldPath] to refer to the ID of a document.
 /// It can be used in queries to sort or filter by the document ID.
 @Deprecated('Use "Firestore.documentId" instead.')
 js.FieldPath documentId() {
-  final js.FieldPathPrototype proto = js.admin.firestore.FieldPath;
+  final js.FieldPathPrototype proto = js.admin!.firestore.FieldPath;
   return proto.documentId();
 }
 
@@ -51,7 +51,7 @@ class Firestore {
   /// Returns a special sentinel [FieldPath] to refer to the ID of a document.
   /// It can be used in queries to sort or filter by the document ID.
   static js.FieldPath documentId() {
-    final js.FieldPathPrototype proto = js.admin.firestore.FieldPath;
+    final js.FieldPathPrototype proto = js.admin!.firestore.FieldPath;
     return proto.documentId();
   }
 
@@ -113,7 +113,7 @@ class Firestore {
       return futureToPromise(updateFunction(new Transaction(transaction)));
     };
     return promiseToFuture<T>(
-        nativeInstance.runTransaction(allowInterop(jsUpdateFunction)));
+        nativeInstance.runTransaction(allowInterop(jsUpdateFunction as Promise Function(Transaction))));
   }
 
   /// Fetches the root collections that are associated with this Firestore
@@ -151,12 +151,12 @@ class CollectionReference extends DocumentQuery {
 
   @override
   @protected
-  js.CollectionReference get nativeInstance => super.nativeInstance;
+  js.CollectionReference get nativeInstance => super.nativeInstance as CollectionReference;
 
   /// For subcollections, parent returns the containing DocumentReference.
   ///
   /// For root collections, null is returned.
-  DocumentReference get parent {
+  DocumentReference? get parent {
     return (nativeInstance.parent != null)
         ? new DocumentReference(nativeInstance.parent, firestore)
         : null;
@@ -168,7 +168,7 @@ class CollectionReference extends DocumentQuery {
   ///
   /// The unique key generated is prefixed with a client-generated timestamp
   /// so that the resulting list will be chronologically-sorted.
-  DocumentReference document([String path]) {
+  DocumentReference document([String? path]) {
     final docRef =
         (path == null) ? nativeInstance.doc() : nativeInstance.doc(path);
     return new DocumentReference(docRef, firestore);
@@ -218,7 +218,7 @@ class DocumentReference {
   /// Writes to the document referred to by this [DocumentReference]. If the
   /// document does not yet exist, it will be created. If you pass [SetOptions],
   /// the provided data will be merged into an existing document.
-  Future<void> setData(DocumentData data, [js.SetOptions options]) {
+  Future<void> setData(DocumentData data, [js.SetOptions? options]) {
     final docData = data.nativeInstance;
     if (options != null) {
       return promiseToFuture(nativeInstance.set(docData, options));
@@ -252,10 +252,10 @@ class DocumentReference {
 
   /// Notifies of documents at this location.
   Stream<DocumentSnapshot> get snapshots {
-    Function cancelCallback;
+    late Function cancelCallback;
     // It's fine to let the StreamController be garbage collected once all the
     // subscribers have cancelled; this analyzer warning is safe to ignore.
-    StreamController<DocumentSnapshot> controller; // ignore: close_sinks
+    late StreamController<DocumentSnapshot> controller; // ignore: close_sinks
 
     void _onNextSnapshot(js.DocumentSnapshot jsSnapshot) {
       controller.add(new DocumentSnapshot(jsSnapshot, firestore));
@@ -309,7 +309,7 @@ class DocumentChange {
   /// The type of change that occurred (added, modified, or removed).
   ///
   /// Can be `null` if this document change was returned from [DocumentQuery.get].
-  DocumentChangeType get type {
+  DocumentChangeType? get type {
     if (_type != null) return _type;
     if (nativeInstance.type == 'added') {
       _type = DocumentChangeType.added;
@@ -321,7 +321,7 @@ class DocumentChange {
     return _type;
   }
 
-  DocumentChangeType _type;
+  DocumentChangeType? _type;
 
   /// The index of the changed document in the result set immediately prior to
   /// this [DocumentChange] (i.e. supposing that all prior DocumentChange objects
@@ -340,7 +340,7 @@ class DocumentChange {
   /// The document affected by this change.
   DocumentSnapshot get document =>
       _document ??= new DocumentSnapshot(nativeInstance.doc, firestore);
-  DocumentSnapshot _document;
+  DocumentSnapshot? _document;
 }
 
 class DocumentSnapshot {
@@ -353,11 +353,11 @@ class DocumentSnapshot {
   /// The reference that produced this snapshot
   DocumentReference get reference =>
       _reference ??= new DocumentReference(nativeInstance.ref, firestore);
-  DocumentReference _reference;
+  DocumentReference? _reference;
 
   /// Contains all the data of this snapshot
   DocumentData get data => _data ??= new DocumentData(nativeInstance.data());
-  DocumentData _data;
+  DocumentData? _data;
 
   /// Returns `true` if the document exists.
   bool get exists => nativeInstance.exists;
@@ -386,7 +386,7 @@ class DocumentSnapshot {
 }
 
 class _FirestoreData {
-  _FirestoreData([Object nativeInstance])
+  _FirestoreData([Object? nativeInstance])
       : nativeInstance = nativeInstance ?? newObject();
   @protected
   final dynamic nativeInstance;
@@ -518,7 +518,7 @@ class _FirestoreData {
     setProperty(nativeInstance, key, data);
   }
 
-  void setFieldValue(String key, FieldValue value) {
+  void setFieldValue(String key, FieldValue? value) {
     assert(key != null);
     setProperty(nativeInstance, key, value?._jsify());
   }
@@ -612,8 +612,8 @@ class _FirestoreData {
   // TODO: figure out how to handle array* field values. For now ignored as they
   // don't need js to dart conversion
   bool _isFieldValue(value) {
-    if (value == js.admin.firestore.FieldValue.delete() ||
-        value == js.admin.firestore.FieldValue.serverTimestamp()) {
+    if (value == js.admin!.firestore.FieldValue.delete() ||
+        value == js.admin!.firestore.FieldValue.serverTimestamp()) {
       return true;
     }
     return false;
@@ -737,7 +737,7 @@ class _FirestoreData {
 /// - [UpdateData] which is used to update a part of a document and follows
 ///   different pattern for handling nested fields.
 class DocumentData extends _FirestoreData {
-  DocumentData([js.DocumentData nativeInstance]) : super(nativeInstance);
+  DocumentData([js.DocumentData? nativeInstance]) : super(nativeInstance);
 
   factory DocumentData.fromMap(Map<String, dynamic> data) {
     final doc = new DocumentData();
@@ -784,7 +784,7 @@ class DocumentData extends _FirestoreData {
 ///     UpdateData data = new UpdateData();
 ///     data.setString("profile.name", "John");
 class UpdateData extends _FirestoreData {
-  UpdateData([js.UpdateData nativeInstance]) : super(nativeInstance);
+  UpdateData([js.UpdateData? nativeInstance]) : super(nativeInstance);
 
   factory UpdateData.fromMap(Map<String, dynamic> data) {
     final doc = new UpdateData();
@@ -883,7 +883,7 @@ class QuerySnapshot {
   bool get isNotEmpty => !isEmpty;
 
   /// Gets a list of all the documents included in this snapshot
-  List<DocumentSnapshot> get documents {
+  List<DocumentSnapshot>? get documents {
     if (isEmpty) return const <DocumentSnapshot>[];
     _documents ??= new List<js.QueryDocumentSnapshot>.from(nativeInstance.docs)
         .map((jsDoc) => new DocumentSnapshot(jsDoc, firestore))
@@ -891,11 +891,11 @@ class QuerySnapshot {
     return _documents;
   }
 
-  List<DocumentSnapshot> _documents;
+  List<DocumentSnapshot>? _documents;
 
   /// An array of the documents that changed since the last snapshot. If this
   /// is the first snapshot, all documents will be in the list as Added changes.
-  List<DocumentChange> get documentChanges {
+  List<DocumentChange>? get documentChanges {
     if (_changes == null) {
       if (nativeInstance.docChanges() == null) {
         _changes = const <DocumentChange>[];
@@ -908,7 +908,7 @@ class QuerySnapshot {
     return _changes;
   }
 
-  List<DocumentChange> _changes;
+  List<DocumentChange>? _changes;
 }
 
 /// Represents a query over the data at a particular location.
@@ -928,7 +928,7 @@ class DocumentQuery {
   Stream<QuerySnapshot> get snapshots {
     // It's fine to let the StreamController be garbage collected once all the
     // subscribers have cancelled; this analyzer warning is safe to ignore.
-    StreamController<QuerySnapshot> controller; // ignore: close_sinks
+    late StreamController<QuerySnapshot> controller; // ignore: close_sinks
 
     void onSnapshot(js.QuerySnapshot snapshot) {
       controller.add(new QuerySnapshot(snapshot, firestore));
@@ -938,7 +938,7 @@ class DocumentQuery {
       controller.addError(error);
     }
 
-    Function unsubscribe;
+    late Function unsubscribe;
 
     controller = new StreamController<QuerySnapshot>.broadcast(
       onListen: () {
@@ -965,7 +965,7 @@ class DocumentQuery {
     dynamic isGreaterThan,
     dynamic isGreaterThanOrEqualTo,
     dynamic arrayContains,
-    bool isNull,
+    bool? isNull,
   }) {
     js.DocumentQuery query = nativeInstance;
 
@@ -1009,7 +1009,7 @@ class DocumentQuery {
   /// The [values] must be in order of [orderBy] filters.
   ///
   /// Cannot be used in combination with [startAt].
-  DocumentQuery startAfter({DocumentSnapshot snapshot, List<dynamic> values}) {
+  DocumentQuery startAfter({DocumentSnapshot? snapshot, List<dynamic>? values}) {
     return new DocumentQuery(
         _wrapPaginatingFunctionCall("startAfter", snapshot, values), firestore);
   }
@@ -1021,7 +1021,7 @@ class DocumentQuery {
   /// The [values] must be in order of [orderBy] filters.
   ///
   /// Cannot be used in combination with [startAfter].
-  DocumentQuery startAt({DocumentSnapshot snapshot, List<dynamic> values}) {
+  DocumentQuery startAt({DocumentSnapshot? snapshot, List<dynamic>? values}) {
     return new DocumentQuery(
         _wrapPaginatingFunctionCall("startAt", snapshot, values), firestore);
   }
@@ -1033,7 +1033,7 @@ class DocumentQuery {
   /// The [values] must be in order of [orderBy] filters.
   ///
   /// Cannot be used in combination with [endBefore].
-  DocumentQuery endAt({DocumentSnapshot snapshot, List<dynamic> values}) {
+  DocumentQuery endAt({DocumentSnapshot? snapshot, List<dynamic>? values}) {
     return new DocumentQuery(
         _wrapPaginatingFunctionCall("endAt", snapshot, values), firestore);
   }
@@ -1045,7 +1045,7 @@ class DocumentQuery {
   /// The [values] must be in order of [orderBy] filters.
   ///
   /// Cannot be used in combination with [endAt].
-  DocumentQuery endBefore({DocumentSnapshot snapshot, List<dynamic> values}) {
+  DocumentQuery endBefore({DocumentSnapshot? snapshot, List<dynamic>? values}) {
     return new DocumentQuery(
         _wrapPaginatingFunctionCall("endBefore", snapshot, values), firestore);
   }
@@ -1067,7 +1067,7 @@ class DocumentQuery {
   /// We need to call this method in all paginating methods to fix that Dart
   /// doesn't support varargs - we need to use [List] to call js function.
   js.DocumentQuery _wrapPaginatingFunctionCall(
-      String method, DocumentSnapshot snapshot, List<dynamic> values) {
+      String method, DocumentSnapshot? snapshot, List<dynamic>? values) {
     if (snapshot == null && values == null) {
       throw new ArgumentError(
           "Please provide either snapshot or values parameter.");
@@ -1077,7 +1077,7 @@ class DocumentQuery {
     }
     List<dynamic> args = (snapshot != null)
         ? [snapshot.nativeInstance]
-        : values.map(_FirestoreData._jsify).toList();
+        : values!.map(_FirestoreData._jsify).toList();
     return callMethod(nativeInstance, method, args);
   }
 
@@ -1145,7 +1145,7 @@ class Transaction {
   /// [DocumentSnapshot.updateTime]. The update will be accepted only if
   /// update time on the server is equal to this value.
   void update(DocumentReference documentRef, UpdateData data,
-      {Timestamp lastUpdateTime}) {
+      {Timestamp? lastUpdateTime}) {
     final docData = data.nativeInstance;
     final nativeRef = documentRef.nativeInstance;
     if (lastUpdateTime != null) {
@@ -1162,7 +1162,7 @@ class Transaction {
   /// delete. This argument, if specified, must contain value of
   /// [DocumentSnapshot.updateTime]. The delete will be accepted only if
   /// update time on the server is equal to this value.
-  void delete(DocumentReference documentRef, {Timestamp lastUpdateTime}) {
+  void delete(DocumentReference documentRef, {Timestamp? lastUpdateTime}) {
     final nativeRef = documentRef.nativeInstance;
     if (lastUpdateTime != null) {
       nativeInstance.delete(nativeRef, _getNativePrecondition(lastUpdateTime));
@@ -1190,7 +1190,7 @@ class WriteBatch {
   /// If the document does not exist yet, it will be created. If you pass
   /// [options], the provided data can be merged into the existing document.
   void setData(DocumentReference documentRef, DocumentData data,
-      [js.SetOptions options]) {
+      [js.SetOptions? options]) {
     final docData = data.nativeInstance;
     final nativeRef = documentRef.nativeInstance;
     if (options != null) {
@@ -1237,7 +1237,7 @@ js.SetOptions _getNativeSetOptions(bool merge) {
 class _FieldValueDelete implements FieldValue {
   @override
   dynamic _jsify() {
-    return js.admin.firestore.FieldValue.delete();
+    return js.admin!.firestore.FieldValue.delete();
   }
 
   @override
@@ -1247,7 +1247,7 @@ class _FieldValueDelete implements FieldValue {
 class _FieldValueServerTimestamp implements FieldValue {
   @override
   dynamic _jsify() {
-    return js.admin.firestore.FieldValue.serverTimestamp();
+    return js.admin!.firestore.FieldValue.serverTimestamp();
   }
 
   @override
@@ -1265,7 +1265,7 @@ class _FieldValueArrayUnion extends _FieldValueArray {
 
   @override
   _jsify() {
-    return callMethod(js.admin.firestore.FieldValue, 'arrayUnion',
+    return callMethod(js.admin!.firestore.FieldValue, 'arrayUnion',
         _FirestoreData._jsifyList(elements));
   }
 
@@ -1278,7 +1278,7 @@ class _FieldValueArrayRemove extends _FieldValueArray {
 
   @override
   _jsify() {
-    return callMethod(js.admin.firestore.FieldValue, 'arrayRemove',
+    return callMethod(js.admin!.firestore.FieldValue, 'arrayRemove',
         _FirestoreData._jsifyList(elements));
   }
 
@@ -1293,7 +1293,7 @@ class _FieldValueIncrement implements FieldValue {
 
   @override
   _jsify() {
-    return js.admin.firestore.FieldValue.increment(value);
+    return js.admin!.firestore.FieldValue.increment(value);
   }
 
   @override
@@ -1304,10 +1304,10 @@ class _FieldValueIncrement implements FieldValue {
 /// or update().
 abstract class FieldValue {
   factory FieldValue._fromJs(dynamic jsFieldValue) {
-    if (jsFieldValue == js.admin.firestore.FieldValue.delete()) {
+    if (jsFieldValue == js.admin!.firestore.FieldValue.delete()) {
       return Firestore.fieldValues.delete();
     } else if (jsFieldValue ==
-        js.admin.firestore.FieldValue.serverTimestamp()) {
+        js.admin!.firestore.FieldValue.serverTimestamp()) {
       return Firestore.fieldValues.serverTimestamp();
     } else {
       throw ArgumentError.value(jsFieldValue, 'jsFieldValue',

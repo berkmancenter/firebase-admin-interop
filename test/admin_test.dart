@@ -9,18 +9,18 @@ import 'setup.dart';
 
 void main() {
   group('FirebaseAdmin', () {
-    App app;
+    App? app;
 
     setUpAll(() {
       app = initFirebaseApp();
     });
 
     tearDownAll(() {
-      return app.delete();
+      return app!.delete();
     });
 
     test('app name', () {
-      expect(app.name, '[DEFAULT]');
+      expect(app!.name, '[DEFAULT]');
     });
   });
 }
