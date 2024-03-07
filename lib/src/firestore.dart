@@ -2,10 +2,8 @@
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
 import 'dart:async';
-import 'dart:js';
 import 'dart:typed_data';
 
-import 'package:js/js.dart';
 import 'package:meta/meta.dart';
 import 'package:node_interop/js.dart';
 import 'package:node_interop/node.dart';
@@ -15,8 +13,7 @@ import 'package:quiver_hashcode/hashcode.dart';
 import 'bindings.dart' as js;
 
 @Deprecated('This function will be hidden from public API in future versions.')
-js.GeoPoint createGeoPoint(num latitude, num longitude) =>
-    _createJsGeoPoint(latitude, longitude);
+js.GeoPoint createGeoPoint(num latitude, num longitude) => _createJsGeoPoint(latitude, longitude);
 
 js.GeoPoint _createJsGeoPoint(num latitude, num longitude) {
   final proto = new js.GeoPointProto(latitude: latitude, longitude: longitude);
@@ -24,8 +21,7 @@ js.GeoPoint _createJsGeoPoint(num latitude, num longitude) {
 }
 
 js.Timestamp _createJsTimestamp(Timestamp ts) {
-  return callConstructor(
-      js.admin!.firestore.Timestamp, jsify([ts.seconds, ts.nanoseconds]));
+  return callConstructor(js.admin!.firestore.Timestamp, jsify([ts.seconds, ts.nanoseconds]));
 }
 
 @Deprecated('This function will be hidden from public API in future versions.')
@@ -85,8 +81,7 @@ class Firestore {
   /// included. Cannot contain a slash.
   DocumentQuery collectionGroup(String collectionId) {
     assert(collectionId != null);
-    return new DocumentQuery(
-        nativeInstance.collectionGroup(collectionId), this);
+    return new DocumentQuery(nativeInstance.collectionGroup(collectionId), this);
   }
 
   /// Gets a [DocumentReference] for the specified Firestore path.
@@ -106,22 +101,20 @@ class Firestore {
   /// completed successfully of was explicitly aborted by returning a Future
   /// with an error. If [updateFunction] throws then returned Future completes
   /// with the same error.
-  Future<T> runTransaction<T>(
-      Future<T> updateFunction(Transaction transaction)) {
+  Future<T> runTransaction<T>(Future<T> updateFunction(Transaction transaction)) {
     assert(updateFunction != null);
     Function jsUpdateFunction = (js.Transaction transaction) {
       return futureToPromise(updateFunction(new Transaction(transaction)));
     };
-    return promiseToFuture<T>(
-        nativeInstance.runTransaction(allowInterop(jsUpdateFunction as Promise Function(Transaction))));
+    return promiseToFuture<T>(nativeInstance
+        .runTransaction(allowInterop(jsUpdateFunction as Promise Function(js.Transaction))));
   }
 
   /// Fetches the root collections that are associated with this Firestore
   /// database.
   Future<List<CollectionReference>> listCollections() async =>
       (await promiseToFuture<List>(nativeInstance.listCollections()))
-          .map((nativeCollectionReference) =>
-              CollectionReference(nativeCollectionReference, this))
+          .map((nativeCollectionReference) => CollectionReference(nativeCollectionReference, this))
           .toList(growable: false);
 
   /// Creates a write batch, used for performing multiple writes as a single
@@ -130,9 +123,8 @@ class Firestore {
 
   /// Retrieves multiple documents from Firestore.
   Future<List<DocumentSnapshot>> getAll(List<DocumentReference> refs) async {
-    final nativeRefs = refs
-        .map((DocumentReference ref) => ref.nativeInstance)
-        .toList(growable: false);
+    final nativeRefs =
+        refs.map((DocumentReference ref) => ref.nativeInstance).toList(growable: false);
     final promise = callMethod(nativeInstance, 'getAll', nativeRefs);
     final result = await promiseToFuture<List>(promise);
     return result
@@ -145,13 +137,12 @@ class Firestore {
 /// document references, and querying for documents (using the methods
 /// inherited from [DocumentQuery]).
 class CollectionReference extends DocumentQuery {
-  CollectionReference(
-      js.CollectionReference nativeInstance, Firestore firestore)
+  CollectionReference(js.CollectionReference nativeInstance, Firestore firestore)
       : super(nativeInstance, firestore);
 
   @override
   @protected
-  js.CollectionReference get nativeInstance => super.nativeInstance as CollectionReference;
+  js.CollectionReference get nativeInstance => super.nativeInstance as js.CollectionReference;
 
   /// For subcollections, parent returns the containing DocumentReference.
   ///
@@ -169,8 +160,7 @@ class CollectionReference extends DocumentQuery {
   /// The unique key generated is prefixed with a client-generated timestamp
   /// so that the resulting list will be chronologically-sorted.
   DocumentReference document([String? path]) {
-    final docRef =
-        (path == null) ? nativeInstance.doc() : nativeInstance.doc(path);
+    final docRef = (path == null) ? nativeInstance.doc() : nativeInstance.doc(path);
     return new DocumentReference(docRef, firestore);
   }
 
@@ -263,8 +253,7 @@ class DocumentReference {
 
     controller = new StreamController<DocumentSnapshot>.broadcast(
       onListen: () {
-        cancelCallback =
-            nativeInstance.onSnapshot(allowInterop(_onNextSnapshot));
+        cancelCallback = nativeInstance.onSnapshot(allowInterop(_onNextSnapshot));
       },
       onCancel: () {
         cancelCallback();
@@ -274,11 +263,10 @@ class DocumentReference {
   }
 
   /// Fetches the subcollections that are direct children of this document.
-  Future<List<CollectionReference>> listCollections() async =>
-      (await promiseToFuture<List>(nativeInstance.listCollections()))
-          .map((nativeCollectionReference) =>
-              CollectionReference(nativeCollectionReference, firestore))
-          .toList(growable: false);
+  Future<List<CollectionReference>> listCollections() async => (await promiseToFuture<List>(
+          nativeInstance.listCollections()))
+      .map((nativeCollectionReference) => CollectionReference(nativeCollectionReference, firestore))
+      .toList(growable: false);
 }
 
 /// An enumeration of document change types.
@@ -367,7 +355,7 @@ class DocumentSnapshot {
 
   /// The time the document was created. Not set for documents that don't
   /// exist.
-  Timestamp get createTime {
+  Timestamp? get createTime {
     final ts = nativeInstance.createTime;
     if (ts == null) return null;
     return new Timestamp(ts.seconds, ts.nanoseconds);
@@ -378,7 +366,7 @@ class DocumentSnapshot {
   ///
   /// Note that this value includes nanoseconds and can not be represented
   /// by a [DateTime] object with expected accuracy when used in [Transaction].
-  Timestamp get updateTime {
+  Timestamp? get updateTime {
     final ts = nativeInstance.updateTime;
     if (ts == null) return null;
     return new Timestamp(ts.seconds, ts.nanoseconds);
@@ -386,8 +374,7 @@ class DocumentSnapshot {
 }
 
 class _FirestoreData {
-  _FirestoreData([Object? nativeInstance])
-      : nativeInstance = nativeInstance ?? newObject();
+  _FirestoreData([Object? nativeInstance]) : nativeInstance = nativeInstance ?? newObject();
   @protected
   final dynamic nativeInstance;
 
@@ -425,11 +412,9 @@ class _FirestoreData {
     } else if (value is FieldValue) {
       setFieldValue(key, value);
     } else if (value is Map) {
-      setNestedData(
-          key, new DocumentData.fromMap(value.cast<String, dynamic>()));
+      setNestedData(key, new DocumentData.fromMap(value.cast<String, dynamic>()));
     } else {
-      throw new ArgumentError.value(
-          value, key, 'Unsupported value type for Firestore.');
+      throw new ArgumentError.value(value, key, 'Unsupported value type for Firestore.');
     }
   }
 
@@ -461,14 +446,14 @@ class _FirestoreData {
   bool has(String key) => hasProperty(nativeInstance, key);
 
   @Deprecated('Migrate to using Firestore Timestamps and "getTimestamp()".')
-  DateTime getDateTime(String key) {
+  DateTime? getDateTime(String key) {
     final Date value = getProperty(nativeInstance, key);
     if (value == null) return null;
     assert(_isDate(value), 'Tried to get Date and got $value');
     return new DateTime.fromMillisecondsSinceEpoch(value.getTime());
   }
 
-  Timestamp getTimestamp(String key) {
+  Timestamp? getTimestamp(String key) {
     js.Timestamp ts = getProperty(nativeInstance, key);
     if (ts == null) return null;
     assert(_isTimestamp(ts), 'Tried to get Timestamp and got $ts.');
@@ -478,8 +463,7 @@ class _FirestoreData {
   @Deprecated('Migrate to using Firestore Timestamps and "setTimestamp()".')
   void setDateTime(String key, DateTime value) {
     assert(key != null);
-    final data =
-        (value != null) ? new Date(value.millisecondsSinceEpoch) : null;
+    final data = (value != null) ? new Date(value.millisecondsSinceEpoch) : null;
     setProperty(nativeInstance, key, data);
   }
 
@@ -489,15 +473,14 @@ class _FirestoreData {
     setProperty(nativeInstance, key, ts);
   }
 
-  GeoPoint getGeoPoint(String key) {
+  GeoPoint? getGeoPoint(String key) {
     js.GeoPoint value = getProperty(nativeInstance, key);
     if (value == null) return null;
-    assert(_isGeoPoint(value),
-        'Invalid value provided to $runtimeType.getGeoPoint().');
+    assert(_isGeoPoint(value), 'Invalid value provided to $runtimeType.getGeoPoint().');
     return new GeoPoint(value.latitude.toDouble(), value.longitude.toDouble());
   }
 
-  Blob getBlob(String key) {
+  Blob? getBlob(String key) {
     var value = getProperty(nativeInstance, key);
     if (value == null) return null;
     assert(_isBlob(value), 'Invalid value provided to $runtimeType.getBlob().');
@@ -506,9 +489,7 @@ class _FirestoreData {
 
   void setGeoPoint(String key, GeoPoint value) {
     assert(key != null);
-    final data = (value != null)
-        ? _createJsGeoPoint(value.latitude, value.longitude)
-        : null;
+    final data = (value != null) ? _createJsGeoPoint(value.latitude, value.longitude) : null;
     setProperty(nativeInstance, key, data);
   }
 
@@ -529,19 +510,15 @@ class _FirestoreData {
   }
 
   static bool _isPrimitive(value) =>
-      value == null ||
-      value is int ||
-      value is double ||
-      value is String ||
-      value is bool;
+      value == null || value is int || value is double || value is String || value is bool;
 
-  List getList(String key) {
+  List? getList(String key) {
     final data = getProperty(nativeInstance, key);
     if (data == null) return null;
     if (data is! List) {
       throw new StateError('Expected list but got ${data.runtimeType}.');
     }
-    final result = new List();
+    final result = new List.empty();
     for (var item in data) {
       item = _dartify(item);
       result.add(item);
@@ -562,11 +539,10 @@ class _FirestoreData {
     setProperty(nativeInstance, key, data);
   }
 
-  DocumentReference getReference(String key) {
+  DocumentReference? getReference(String key) {
     js.DocumentReference ref = getProperty(nativeInstance, key);
     if (ref == null) return null;
-    assert(_isReference(ref),
-        'Invalid value provided to $runtimeType.getReference().');
+    assert(_isReference(ref), 'Invalid value provided to $runtimeType.getReference().');
 
     js.Firestore firestore = ref.firestore;
     return new DocumentReference(ref, new Firestore(firestore));
@@ -578,8 +554,7 @@ class _FirestoreData {
     setProperty(nativeInstance, key, data);
   }
 
-  bool _isTimestamp(value) =>
-      hasProperty(value, '_seconds') && hasProperty(value, '_nanoseconds');
+  bool _isTimestamp(value) => hasProperty(value, '_seconds') && hasProperty(value, '_nanoseconds');
 
   // Workarounds for dart2js as `value is Type` doesn't work as expected.
   bool _isDate(value) =>
@@ -587,8 +562,7 @@ class _FirestoreData {
       hasProperty(value, 'getTime') &&
       getProperty(value, 'getTime') is Function;
 
-  bool _isGeoPoint(value) =>
-      hasProperty(value, '_latitude') && hasProperty(value, '_longitude');
+  bool _isGeoPoint(value) => hasProperty(value, '_latitude') && hasProperty(value, '_longitude');
 
   bool _isBlob(value) {
     if (value is Uint8List) {
@@ -642,10 +616,9 @@ class _FirestoreData {
     } else if (item is List) {
       return _jsifyList(item);
     } else if (item is Map) {
-      return DocumentData.fromMap(item?.cast<String, dynamic>()).nativeInstance;
+      return DocumentData.fromMap(item!.cast<String, dynamic>()).nativeInstance;
     } else {
-      throw UnsupportedError(
-          'Value of type ${item.runtimeType} is not supported by Firestore.');
+      throw UnsupportedError('Value of type ${item.runtimeType} is not supported by Firestore.');
     }
   }
 
@@ -745,7 +718,7 @@ class DocumentData extends _FirestoreData {
     return doc;
   }
 
-  DocumentData getNestedData(String key) {
+  DocumentData? getNestedData(String key) {
     final data = getProperty(nativeInstance, key);
     if (data == null) return null;
     return new DocumentData(data);
@@ -811,8 +784,7 @@ class Timestamp {
     if (identical(this, other)) return true;
     if (other is! Timestamp) return false;
     Timestamp typedOther = other;
-    return seconds == typedOther.seconds &&
-        nanoseconds == typedOther.nanoseconds;
+    return seconds == typedOther.seconds && nanoseconds == typedOther.nanoseconds;
   }
 
   @override
@@ -942,8 +914,7 @@ class DocumentQuery {
 
     controller = new StreamController<QuerySnapshot>.broadcast(
       onListen: () {
-        unsubscribe = nativeInstance.onSnapshot(
-            allowInterop(onSnapshot), allowInterop(onError));
+        unsubscribe = nativeInstance.onSnapshot(allowInterop(onSnapshot), allowInterop(onError));
       },
       onCancel: () {
         unsubscribe();
@@ -975,13 +946,10 @@ class DocumentQuery {
 
     if (isEqualTo != null) addCondition(field, '==', isEqualTo);
     if (isLessThan != null) addCondition(field, '<', isLessThan);
-    if (isLessThanOrEqualTo != null)
-      addCondition(field, '<=', isLessThanOrEqualTo);
+    if (isLessThanOrEqualTo != null) addCondition(field, '<=', isLessThanOrEqualTo);
     if (isGreaterThan != null) addCondition(field, '>', isGreaterThan);
-    if (isGreaterThanOrEqualTo != null)
-      addCondition(field, '>=', isGreaterThanOrEqualTo);
-    if (arrayContains != null)
-      addCondition(field, 'array-contains', arrayContains);
+    if (isGreaterThanOrEqualTo != null) addCondition(field, '>=', isGreaterThanOrEqualTo);
+    if (arrayContains != null) addCondition(field, 'array-contains', arrayContains);
 
     if (isNull != null) {
       assert(
@@ -998,8 +966,7 @@ class DocumentQuery {
   /// [field].
   DocumentQuery orderBy(String field, {bool descending: false}) {
     String direction = descending ? 'desc' : 'asc';
-    return new DocumentQuery(
-        nativeInstance.orderBy(field, direction), firestore);
+    return new DocumentQuery(nativeInstance.orderBy(field, direction), firestore);
   }
 
   /// Takes a [snapshot] or a list of [values], creates and returns a new [DocumentQuery]
@@ -1022,8 +989,7 @@ class DocumentQuery {
   ///
   /// Cannot be used in combination with [startAfter].
   DocumentQuery startAt({DocumentSnapshot? snapshot, List<dynamic>? values}) {
-    return new DocumentQuery(
-        _wrapPaginatingFunctionCall("startAt", snapshot, values), firestore);
+    return new DocumentQuery(_wrapPaginatingFunctionCall("startAt", snapshot, values), firestore);
   }
 
   /// Takes a [snapshot] or a list of [values], creates and returns a new [DocumentQuery]
@@ -1034,8 +1000,7 @@ class DocumentQuery {
   ///
   /// Cannot be used in combination with [endBefore].
   DocumentQuery endAt({DocumentSnapshot? snapshot, List<dynamic>? values}) {
-    return new DocumentQuery(
-        _wrapPaginatingFunctionCall("endAt", snapshot, values), firestore);
+    return new DocumentQuery(_wrapPaginatingFunctionCall("endAt", snapshot, values), firestore);
   }
 
   /// Takes a [snapshot] or a list of [values], creates and returns a new [DocumentQuery]
@@ -1046,8 +1011,7 @@ class DocumentQuery {
   ///
   /// Cannot be used in combination with [endAt].
   DocumentQuery endBefore({DocumentSnapshot? snapshot, List<dynamic>? values}) {
-    return new DocumentQuery(
-        _wrapPaginatingFunctionCall("endBefore", snapshot, values), firestore);
+    return new DocumentQuery(_wrapPaginatingFunctionCall("endBefore", snapshot, values), firestore);
   }
 
   /// Creates and returns a new Query that's additionally limited to only return up
@@ -1069,11 +1033,9 @@ class DocumentQuery {
   js.DocumentQuery _wrapPaginatingFunctionCall(
       String method, DocumentSnapshot? snapshot, List<dynamic>? values) {
     if (snapshot == null && values == null) {
-      throw new ArgumentError(
-          "Please provide either snapshot or values parameter.");
+      throw new ArgumentError("Please provide either snapshot or values parameter.");
     } else if (snapshot != null && values != null) {
-      throw new ArgumentError(
-          'Cannot provide both snapshot and values parameters.');
+      throw new ArgumentError('Cannot provide both snapshot and values parameters.');
     }
     List<dynamic> args = (snapshot != null)
         ? [snapshot.nativeInstance]
@@ -1088,8 +1050,7 @@ class DocumentQuery {
   DocumentQuery select(List<String> fieldPaths) {
     assert(fieldPaths != null);
     //  Dart doesn't support varargs
-    return new DocumentQuery(
-        callMethod(nativeInstance, "select", fieldPaths), firestore);
+    return new DocumentQuery(callMethod(nativeInstance, "select", fieldPaths), firestore);
   }
 }
 
@@ -1106,8 +1067,8 @@ class Transaction {
   /// Holds a pessimistic lock on the returned document.
   Future<DocumentSnapshot> get(DocumentReference documentRef) {
     final nativeRef = documentRef.nativeInstance;
-    return promiseToFuture(nativeInstance.get(nativeRef)).then((jsSnapshot) =>
-        new DocumentSnapshot(jsSnapshot, documentRef.firestore));
+    return promiseToFuture(nativeInstance.get(nativeRef))
+        .then((jsSnapshot) => new DocumentSnapshot(jsSnapshot, documentRef.firestore));
   }
 
   /// Retrieves a query result. Holds a pessimistic lock on the returned
@@ -1130,8 +1091,7 @@ class Transaction {
   /// Writes to the document referred to by the provided [documentRef].
   /// If the document does not exist yet, it will be created. If you pass
   /// [options], the provided data can be merged into the existing document.
-  void set(DocumentReference documentRef, DocumentData data,
-      {bool merge: false}) {
+  void set(DocumentReference documentRef, DocumentData data, {bool merge: false}) {
     final docData = data.nativeInstance;
     final nativeRef = documentRef.nativeInstance;
     nativeInstance.set(nativeRef, docData, _getNativeSetOptions(merge));
@@ -1144,13 +1104,11 @@ class Transaction {
   /// update. This argument, if specified, must contain value of
   /// [DocumentSnapshot.updateTime]. The update will be accepted only if
   /// update time on the server is equal to this value.
-  void update(DocumentReference documentRef, UpdateData data,
-      {Timestamp? lastUpdateTime}) {
+  void update(DocumentReference documentRef, UpdateData data, {Timestamp? lastUpdateTime}) {
     final docData = data.nativeInstance;
     final nativeRef = documentRef.nativeInstance;
     if (lastUpdateTime != null) {
-      nativeInstance.update(
-          nativeRef, docData, _getNativePrecondition(lastUpdateTime));
+      nativeInstance.update(nativeRef, docData, _getNativePrecondition(lastUpdateTime));
     } else {
       nativeInstance.update(nativeRef, docData);
     }
@@ -1189,8 +1147,7 @@ class WriteBatch {
   /// Write to the document referred to by the provided [documentRef].
   /// If the document does not exist yet, it will be created. If you pass
   /// [options], the provided data can be merged into the existing document.
-  void setData(DocumentReference documentRef, DocumentData data,
-      [js.SetOptions? options]) {
+  void setData(DocumentReference documentRef, DocumentData data, [js.SetOptions? options]) {
     final docData = data.nativeInstance;
     final nativeRef = documentRef.nativeInstance;
     if (options != null) {
@@ -1208,8 +1165,7 @@ class WriteBatch {
       nativeInstance.update(documentRef.nativeInstance, data.nativeInstance);
 
   /// Deletes the document referred to by the provided [documentRef].
-  void delete(DocumentReference documentRef) =>
-      nativeInstance.delete(documentRef.nativeInstance);
+  void delete(DocumentReference documentRef) => nativeInstance.delete(documentRef.nativeInstance);
 
   /// Commits all of the writes in this write batch as a single atomic unit.
   Future commit() => promiseToFuture(nativeInstance.commit());
@@ -1265,8 +1221,8 @@ class _FieldValueArrayUnion extends _FieldValueArray {
 
   @override
   _jsify() {
-    return callMethod(js.admin!.firestore.FieldValue, 'arrayUnion',
-        _FirestoreData._jsifyList(elements));
+    return callMethod(
+        js.admin!.firestore.FieldValue, 'arrayUnion', _FirestoreData._jsifyList(elements));
   }
 
   @override
@@ -1278,8 +1234,8 @@ class _FieldValueArrayRemove extends _FieldValueArray {
 
   @override
   _jsify() {
-    return callMethod(js.admin!.firestore.FieldValue, 'arrayRemove',
-        _FirestoreData._jsifyList(elements));
+    return callMethod(
+        js.admin!.firestore.FieldValue, 'arrayRemove', _FirestoreData._jsifyList(elements));
   }
 
   @override
@@ -1306,8 +1262,7 @@ abstract class FieldValue {
   factory FieldValue._fromJs(dynamic jsFieldValue) {
     if (jsFieldValue == js.admin!.firestore.FieldValue.delete()) {
       return Firestore.fieldValues.delete();
-    } else if (jsFieldValue ==
-        js.admin!.firestore.FieldValue.serverTimestamp()) {
+    } else if (jsFieldValue == js.admin!.firestore.FieldValue.serverTimestamp()) {
       return Firestore.fieldValues.serverTimestamp();
     } else {
       throw ArgumentError.value(jsFieldValue, 'jsFieldValue',
