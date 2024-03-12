@@ -8,7 +8,7 @@ import 'package:meta/meta.dart';
 import 'package:node_interop/js.dart';
 import 'package:node_interop/node.dart';
 import 'package:node_interop/util.dart';
-import 'package:quiver_hashcode/hashcode.dart';
+import 'package:quiver/core.dart';
 
 import 'bindings.dart' as js;
 
@@ -855,12 +855,12 @@ class QuerySnapshot {
   bool get isNotEmpty => !isEmpty;
 
   /// Gets a list of all the documents included in this snapshot
-  List<DocumentSnapshot>? get documents {
+  List<DocumentSnapshot> get documents {
     if (isEmpty) return const <DocumentSnapshot>[];
     _documents ??= new List<js.QueryDocumentSnapshot>.from(nativeInstance.docs)
         .map((jsDoc) => new DocumentSnapshot(jsDoc, firestore))
         .toList(growable: false);
-    return _documents;
+    return _documents!;
   }
 
   List<DocumentSnapshot>? _documents;
