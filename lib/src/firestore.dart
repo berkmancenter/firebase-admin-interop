@@ -964,7 +964,7 @@ class DocumentQuery {
 
   /// Creates and returns a new [DocumentQuery] that's additionally sorted by the specified
   /// [field].
-  DocumentQuery orderBy(String field, {bool descending: false}) {
+  DocumentQuery orderBy(String field, {bool descending = false}) {
     String direction = descending ? 'desc' : 'asc';
     return new DocumentQuery(nativeInstance.orderBy(field, direction), firestore);
   }
@@ -1091,7 +1091,7 @@ class Transaction {
   /// Writes to the document referred to by the provided [documentRef].
   /// If the document does not exist yet, it will be created. If you pass
   /// [options], the provided data can be merged into the existing document.
-  void set(DocumentReference documentRef, DocumentData data, {bool merge: false}) {
+  void set(DocumentReference documentRef, DocumentData data, {bool merge = false}) {
     final docData = data.nativeInstance;
     final nativeRef = documentRef.nativeInstance;
     nativeInstance.set(nativeRef, docData, _getNativeSetOptions(merge));
